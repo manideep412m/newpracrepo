@@ -7,5 +7,5 @@ provider "azurerm"{
 # Define the resource group
 resource"azurerm_resource_group" "vsc" {
   name  = "vsc"
-  location = "UKSouth"
+  location = var.myvar
 }

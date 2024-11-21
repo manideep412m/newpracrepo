@@ -1,0 +1,3 @@
+variable "myvar"{
+    default = UKSouth
+}
