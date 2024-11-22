@@ -1,0 +1,53 @@
+trigger:
+- main  # Trigger on changes to the 'main' branch
+ 
+pool:
+  vmImage: 'ubuntu-latest'  # Use the latest Ubuntu hosted agent
+ 
+stages:
+- stage: Build
+  displayName: 'Build Docker Image'
+  jobs:
+  - job: Build
+    displayName: 'Build and Push Docker Image'
+    steps:
+    - task: Docker@2
+      displayName: 'Login to Azure Container Registry'
+      inputs:
+        command: 'login'
+        azureSubscription: 'Azure Service Connection'  # Azure service connection name
+        containerRegistry: 'youracrname.azurecr.io'  # Replace with your Azure Container Registry URL
+        - task: Docker@2
+      displayName: 'Build Docker Image'
+      inputs:
+        command: 'build'
+        Dockerfile: '**/Dockerfile'  # Path to the Dockerfile in your repo
+        tags: 'youracrname.azurecr.io/myapp:$(Build.BuildId)'  # Tagging image with ACR registry and build ID
+ 
+    - task: Docker@2
+      displayName: 'Push Docker Image to ACR'
+      inputs:
+        command: 'push'
+        containerRegistry: 'youracrname.azurecr.io'  # ACR registry URL
+        imageName: 'youracrname.azurecr.io/myapp:$(Build.BuildId)'  # Image name with the same tag
+        - stage: Deploy
+  displayName: 'Deploy to Azure Container Instances'
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy Docker Image to ACI'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Deploy to ACI'
+      inputs:
+        azureSubscription: 'Azure Service Connection'  # Azure service connection name
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Deploy the Docker container to Azure Container Instances (ACI)
+          az container create \
+            --name myapp-containergroup \
+            --resource-group myResourceGroup \
+            --image youracrname.azurecr.io/myapp:$(Build.BuildId) \
+            --cpu 1 --memory 1.5 \
+            --location eastus \
+            --restart-policy OnFailure
