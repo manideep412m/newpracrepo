@@ -1,3 +1,0 @@
-variable "myvar"{
-    default = UKSouth
-}
